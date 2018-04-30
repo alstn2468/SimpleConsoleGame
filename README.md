@@ -7,7 +7,7 @@ C, C++로 구현한 간단한 콘솔 게임
 ### 스크린샷
 - - -
 ![Maze Game](images/Maze_1.png)<br/>
-<img src="images/Maze_2.png" style="height: 200px"/>
+<img src="images/Maze_2.png" height: "200px"/>
 
 
 ### 조작법
