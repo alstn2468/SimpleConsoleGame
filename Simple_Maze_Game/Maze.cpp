@@ -35,7 +35,95 @@ typedef struct _tagPlayer
 /* 미로를 설정해주는 함수 */
 void SetMaze(char Maze[21][21], PPLAYER pPlayer, PPOINT pStartPos, PPOINT pEndPos)
 {
-	pStartPos->x = 0;
+	// MazeList.txt 파일을 읽어와 미로 목록 생성
+	FILE * pFile = NULL;
+
+	fopen_s(&pFile, "MazeList.txt", "rt");
+
+	char **pMazeList = NULL;
+
+	if (pFile)
+	{
+		char cCount;
+
+		fread(&cCount, 1, 1, pFile);
+
+		int iMazeCount = atoi(&cCount);
+
+		fread(&cCount, 1, 1, pFile);
+
+		/* char  *배열을 미로 개수만큼 할당 */
+		pMazeList = new char *[iMazeCount];
+
+		for (int i = 0; i < iMazeCount; ++i)
+		{
+			int iNameCount = 0;
+
+			/* 현재 미로의 파일 이름을 저장할 배열 할당 */
+			pMazeList[i] = new char[256];
+
+			while (true)
+			{
+				fread(&cCount, 1, 1, pFile);
+
+				if (cCount != '\n')
+				{
+					pMazeList[i][iNameCount] = cCount;
+					++iNameCount;
+				}
+				else
+					break;
+			}
+
+			/* 파일 이름을 모두 읽었다면 문자열의 끝을 설정 */
+			pMazeList[i][iNameCount] = 0;
+		}
+
+		fclose(pFile);
+
+		/* 읽을 파일 목록 생성 완료 파일 중 하나 선택 */
+		for (int i = 0; i < iMazeCount; ++i)
+			cout << i + 1 << ". " << pMazeList[i] << endl;
+
+		cout << "미로를 선택하세요 : ";
+		int iSelect;
+		cin >> iSelect;
+
+		fopen_s(&pFile, pMazeList[iSelect - 1], "rt");
+
+		if (pFile)
+		{
+			/* 미로의 세로 줄 수 만큼 반복 */
+			for (int i = 0; i < 20; ++i)
+			{
+				fread(Maze[i], 1, 20, pFile);
+
+				/* 현재 줄의 미로를 검사 */
+				for (int j = 0; j < 20; ++j)
+				{
+					if (Maze[i][j] == '2')
+					{
+						pStartPos->x = j;
+						pStartPos->y = i;
+
+						pPlayer->tPos = *pStartPos;
+					}
+
+					else if (Maze[i][j] == '3')
+					{
+						pEndPos->x = j;
+						pEndPos->y = i;
+					}
+				}
+
+				/* 개행 문자 읽기 */
+				fread(&cCount, 1, 1, pFile);
+			}
+			fclose(pFile);
+		}
+	}
+
+	/*pStartPos->x = 0;
 	pStartPos->y = 0;
 
 	pEndPos->x = 19;
@@ -62,7 +150,7 @@ void SetMaze(char Maze[21][21], PPLAYER pPlayer, PPOINT pStartPos, PPOINT pEndPo
 	strcpy(Maze[16], "00011100001000010000");
 	strcpy(Maze[17], "00110111111000011100");
 	strcpy(Maze[18], "01110001000000000100");
-	strcpy(Maze[19], "01011001000000000113");
+	strcpy(Maze[19], "01011001000000000113");*/
 }
 
 /* 미로를 출력해주는 함수 */
