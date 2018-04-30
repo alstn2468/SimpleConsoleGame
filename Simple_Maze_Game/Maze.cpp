@@ -1,5 +1,6 @@
 #include <iostream>
 #include <conio.h>
+#include <time.h>
 
 using namespace std;
 
@@ -12,7 +13,6 @@ using namespace std;
 	5 : 파워 아이템
 	6 : 벽 밀기 아이템
 	7 : 투명 아이템
-	8 : 웜홀
 */
 
 typedef struct _tagPoint
@@ -27,6 +27,7 @@ typedef struct _tagPlayer
 {
 	_tagPoint tPos;
 	bool bWallPush;
+	bool bPushOnOff;
 	bool bTransparency;
 	int iBombPower;
 }PLAYER, *PPLAYER;
@@ -88,22 +89,38 @@ void Output(char Maze[21][21], PPLAYER pPlayer)
 
 			else if (Maze[i][j] == '3')
 				cout << "◎";
+
+			else if (Maze[i][j] == '5')
+				cout << "ⓟ";
+
+			else if (Maze[i][j] == '6')
+				cout << "⇔";
+
+			else if (Maze[i][j] == '7')
+				cout << "▷";
 		}
 		cout << endl;
 	}
 
-	cout << "폭탄 파워 : " << pPlayer->iBombPower << endl;
-	cout << "벽 통과 : ";
+	cout << "[폭탄 파워] : " << pPlayer->iBombPower << endl;
+	cout << "[벽 통과] : ";
 	if (pPlayer->bTransparency)
 		cout << "ON\t";
 	else
 		cout << "OFF\t";
 
-	cout << "벽 밀기 : ";
+	cout << "[벽 밀기] : ";
 	if (pPlayer->bWallPush)
-		cout << "ON\t" << endl;
+	{
+		cout << "가능 \\ ";
+
+		if (pPlayer->bPushOnOff)
+			cout << "ON" << endl;
+		else
+			cout << "OFF" << endl;
+	}
 	else
-		cout << "OFF\t" << endl;
+		cout << "불가능 \\ OFF" << endl;
 }
 
 /* 아이템 획득 함수 */
@@ -111,13 +128,16 @@ bool AddItem(char cItemType, PPLAYER pPlayer)
 {
 	if (cItemType == '5')
 	{
-		++pPlayer->iBombPower;
+		if (pPlayer->iBombPower < 5)
+			++pPlayer->iBombPower;
+
 		return true;
 	}
 
 	else if (cItemType == '6')
 	{
 		pPlayer->bWallPush = true;
+		pPlayer->bPushOnOff = true;
 		return true;
 	}
 
@@ -141,6 +161,43 @@ void MoveUp(char Maze[21][21], PPLAYER pPlayer)
 		{
 			--pPlayer->tPos.y;
 		}
+
+		/* 벽 밀기가 가능할 때*/
+		else if (pPlayer->bWallPush && Maze[pPlayer->tPos.y - 1][pPlayer->tPos.x] == '0')
+		{
+			/* 벽 밀기가 ON 상태인 경우 */
+			if (pPlayer->bPushOnOff)
+			{
+				/* 위 위 칸이 0보다 크거나 같은 경우는 인덱스가 존재 */
+				if (pPlayer->tPos.y - 2 >= 0)
+				{
+					/* 위 칸이 벽일 경우 */
+					if (Maze[pPlayer->tPos.y - 2][pPlayer->tPos.x] == '0')
+					{
+						if (pPlayer->bTransparency)
+							--pPlayer->tPos.y;
+					}
+
+					/* 길일 경우 벽을 밀어낸다 */
+					else if (Maze[pPlayer->tPos.y - 2][pPlayer->tPos.x] == '1')
+					{
+						/* 위 위 칸을 벽으로 한다 */
+						Maze[pPlayer->tPos.y - 2][pPlayer->tPos.x] = '0';
+						/* 벽이였던 위 칸을 길로 만듬 */
+						Maze[pPlayer->tPos.y - 1][pPlayer->tPos.x] = '1';
+						/* 플레이어 이동 */
+						--pPlayer->tPos.y;
+					}
+				}
+
+				else if (pPlayer->bTransparency)
+					--pPlayer->tPos.y;
+			}
+
+			/* 벽 밀기 OFF 상태일 경우 */
+			else if (pPlayer->bTransparency)
+				--pPlayer->tPos.y;
+		}
 		/* 유령화 일 경우 */
 		else if (pPlayer->bTransparency)
 			--pPlayer->tPos.y;
@@ -160,6 +217,49 @@ void MoveDown(char Maze[21][21], PPLAYER pPlayer)
 		{
 			++pPlayer->tPos.y;
 		}
+
+		/* 벽 밀기가 가능할 때*/
+		else if (pPlayer->bWallPush && Maze[pPlayer->tPos.y + 1][pPlayer->tPos.x] == '0')
+		{
+			/* 벽 밀기가 ON 상태인 경우 */
+			if (pPlayer->bPushOnOff)
+			{
+				/* 아래 아래 칸이 20보다 작은 경우는 인덱스가 존재 */
+				if (pPlayer->tPos.y + 2 < 20)
+				{
+					/* 아래 칸이 벽일 경우 */
+					if (Maze[pPlayer->tPos.y + 2][pPlayer->tPos.x] == '0')
+					{
+						if (pPlayer->bTransparency)
+							++pPlayer->tPos.y;
+					}
+
+					/* 길일 경우 벽을 밀어낸다 */
+					else if (Maze[pPlayer->tPos.y + 2][pPlayer->tPos.x] == '1')
+					{
+						/* 아래 아래 칸을 벽으로 한다 */
+						Maze[pPlayer->tPos.y + 2][pPlayer->tPos.x] = '0';
+						/* 벽이였던 아래 칸을 길로 만듬 */
+						Maze[pPlayer->tPos.y + 1][pPlayer->tPos.x] = '1';
+						/* 플레이어 이동 */
+						++pPlayer->tPos.y;
+					}
+				}
+
+				else if (pPlayer->bTransparency)
+					++pPlayer->tPos.y;
+			}
+
+			/* 벽 밀기 OFF 상태일 경우 */
+			else if (pPlayer->bTransparency)
+				++pPlayer->tPos.y;
+		}
+		/* 유령화 일 경우 */
+		else if (pPlayer->bTransparency)
+			++pPlayer->tPos.y;
+
+		if (AddItem(Maze[pPlayer->tPos.y][pPlayer->tPos.x], pPlayer))
+			Maze[pPlayer->tPos.y][pPlayer->tPos.x] = '1';
 	}
 }
 
@@ -173,19 +273,105 @@ void MoveRight(char Maze[21][21], PPLAYER pPlayer)
 		{
 			++pPlayer->tPos.x;
 		}
+
+		/* 벽 밀기가 가능할 때*/
+		else if (pPlayer->bWallPush && Maze[pPlayer->tPos.y][pPlayer->tPos.x + 1] == '0')
+		{
+			/* 벽 밀기가 ON 상태인 경우 */
+			if (pPlayer->bPushOnOff)
+			{
+				/* 오른쪽 오른쪽 칸이 0보다 크거나 같은 경우는 인덱스가 존재 */
+				if (pPlayer->tPos.x + 2 < 20)
+				{
+					/* 오른쪽 칸이 벽일 경우 */
+					if (Maze[pPlayer->tPos.y][pPlayer->tPos.x + 2] == '0')
+					{
+						if (pPlayer->bTransparency)
+							++pPlayer->tPos.x;
+					}
+
+					/* 길일 경우 벽을 밀어낸다 */
+					else if (Maze[pPlayer->tPos.y][pPlayer->tPos.x + 2] == '1')
+					{
+						/* 오른쪽 오른쪽 칸을 벽으로 한다 */
+						Maze[pPlayer->tPos.y][pPlayer->tPos.x + 2] = '0';
+						/* 벽이였던 오른쪽 칸을 길로 만듬 */
+						Maze[pPlayer->tPos.y][pPlayer->tPos.x + 1] = '1';
+						/* 플레이어 이동 */
+						++pPlayer->tPos.x;
+					}
+				}
+
+				else if (pPlayer->bTransparency)
+					++pPlayer->tPos.x;
+			}
+
+			/* 벽 밀기 OFF 상태일 경우 */
+			else if (pPlayer->bTransparency)
+				++pPlayer->tPos.x;
+		}
+		/* 유령화 일 경우 */
+		else if (pPlayer->bTransparency)
+			++pPlayer->tPos.x;
+
+		if (AddItem(Maze[pPlayer->tPos.y][pPlayer->tPos.x], pPlayer))
+			Maze[pPlayer->tPos.y][pPlayer->tPos.x] = '1';
 	}
 }
 
 /* 왼쪽으로 움직이는 함수 */
 void MoveLeft(char Maze[21][21], PPLAYER pPlayer)
 {
-	if (pPlayer->tPos.x - 1 < 20)
+	if (pPlayer->tPos.x - 1 >= 0)
 	{
 		/* 벽인지 체크 */
 		if (Maze[pPlayer->tPos.y][pPlayer->tPos.x - 1] != '0' && Maze[pPlayer->tPos.y][pPlayer->tPos.x - 1] != '4')
 		{
 			--pPlayer->tPos.x;
 		}
+
+		/* 벽 밀기가 가능할 때*/
+		else if (pPlayer->bWallPush && Maze[pPlayer->tPos.y][pPlayer->tPos.x - 1] == '0')
+		{
+			/* 벽 밀기가 ON 상태인 경우 */
+			if (pPlayer->bPushOnOff)
+			{
+				/* 왼쪽 왼쪽 칸이 0보다 크거나 같은 경우는 인덱스가 존재 */
+				if (pPlayer->tPos.x - 2 >= 0)
+				{
+					/* 왼쪽 칸이 벽일 경우 */
+					if (Maze[pPlayer->tPos.y][pPlayer->tPos.x - 2] == '0')
+					{
+						if (pPlayer->bTransparency)
+							--pPlayer->tPos.x;
+					}
+
+					/* 길일 경우 벽을 밀어낸다 */
+					else if (Maze[pPlayer->tPos.y][pPlayer->tPos.x - 2] == '1')
+					{
+						/* 왼쪽 왼쪽 칸을 벽으로 한다 */
+						Maze[pPlayer->tPos.y][pPlayer->tPos.x - 2] = '0';
+						/* 벽이였던 왼쪽 칸을 길로 만듬 */
+						Maze[pPlayer->tPos.y][pPlayer->tPos.x - 1] = '1';
+						/* 플레이어 이동 */
+						--pPlayer->tPos.x;
+					}
+				}
+
+				else if (pPlayer->bTransparency)
+					--pPlayer->tPos.x;
+			}
+
+			/* 벽 밀기 OFF 상태일 경우 */
+			else if (pPlayer->bTransparency)
+				--pPlayer->tPos.x;
+		}
+		/* 유령화 일 경우 */
+		else if (pPlayer->bTransparency)
+			--pPlayer->tPos.x;
+
+		if (AddItem(Maze[pPlayer->tPos.y][pPlayer->tPos.x], pPlayer))
+			Maze[pPlayer->tPos.y][pPlayer->tPos.x] = '1';
 	}
 }
 
@@ -219,6 +405,9 @@ void CreateBomb(char Maze[21][21], const PPLAYER pPlayer, PPOINT pBombArr, int *
 	if (*pBombCount == 5)
 		return;
 
+	else if (Maze[pPlayer->tPos.y][pPlayer->tPos.x] == '0')
+		return;
+
 	for (int i = 0; i < *pBombCount; i++)
 	{
 		if (pPlayer->tPos.x == pBombArr[i].x && pPlayer->tPos.y == pBombArr[i].y)
@@ -238,55 +427,122 @@ void Fire(char Maze[21][21], PPLAYER pPlayer, PPOINT pBombArr, int *pBombCount)
 	{
 		Maze[pBombArr[i].y][pBombArr[i].x] = '1';
 
-		if (pBombArr[i].y - 1 >= 0) // 위
+		for (int j = 1; j <= pPlayer->iBombPower; j++)
 		{
-			if (Maze[pBombArr[i].y - 1][pBombArr[i].x] == '0')
-				Maze[pBombArr[i].y - 1][pBombArr[i].x] = '1';
-
-			/* 플레이어가 폭탄에 맞았을 때 시작점으로 보낸다. */
-			if (pPlayer->tPos.x == pBombArr[i].x && pPlayer->tPos.y == pBombArr[i].y - 1)
+			if (pBombArr[i].y - j >= 0) // 위
 			{
-				pPlayer->tPos.x = 0;
-				pPlayer->tPos.y = 0;
+				if (Maze[pBombArr[i].y - j][pBombArr[i].x] == '0')
+				{
+					/* 아이템 드랍 확률을 구한다. */
+					if (rand() % 100 < 20)
+					{
+						int iPercent = rand() % 100;
+
+						if (rand() % 100 < 40)
+							Maze[pBombArr[i].y - j][pBombArr[i].x] = '5';
+
+						else if(iPercent < 70)
+							Maze[pBombArr[i].y - j][pBombArr[i].x] = '6';
+
+						else
+							Maze[pBombArr[i].y - j][pBombArr[i].x] = '7';
+					}
+					else
+						Maze[pBombArr[i].y - j][pBombArr[i].x] = '1';
+				}
+				/* 플레이어가 폭탄에 맞았을 때 시작점으로 보낸다. */
+				if (pPlayer->tPos.x == pBombArr[i].x && pPlayer->tPos.y == pBombArr[i].y - j)
+				{
+					pPlayer->tPos.x = 0;
+					pPlayer->tPos.y = 0;
+				}
 			}
-		}
 
-		if (pBombArr[i].y + 1 < 20) // 아래
-		{
-			if (Maze[pBombArr[i].y + 1][pBombArr[i].x] == '0')
-				Maze[pBombArr[i].y + 1][pBombArr[i].x] = '1';
-
-			/* 플레이어가 폭탄에 맞았을 때 시작점으로 보낸다. */
-			if (pPlayer->tPos.x == pBombArr[i].x && pPlayer->tPos.y == pBombArr[i].y + 1)
+			if (pBombArr[i].y + j < 20) // 아래
 			{
-				pPlayer->tPos.x = 0;
-				pPlayer->tPos.y = 0;
+				if (Maze[pBombArr[i].y + j][pBombArr[i].x] == '0')
+				{
+					/* 아이템 드랍 확률을 구한다. */
+					if (rand() % 100 < 20)
+					{
+						int iPercent = rand() % 100;
+
+						if (rand() % 100 < 40)
+							Maze[pBombArr[i].y + j][pBombArr[i].x] = '5';
+
+						else if (iPercent < 70)
+							Maze[pBombArr[i].y + j][pBombArr[i].x] = '6';
+
+						else
+							Maze[pBombArr[i].y + j][pBombArr[i].x] = '7';
+					}
+					else
+						Maze[pBombArr[i].y + j][pBombArr[i].x] = '1';
+				}
+				/* 플레이어가 폭탄에 맞았을 때 시작점으로 보낸다. */
+				if (pPlayer->tPos.x == pBombArr[i].x && pPlayer->tPos.y == pBombArr[i].y + j)
+				{
+					pPlayer->tPos.x = 0;
+					pPlayer->tPos.y = 0;
+				}
 			}
-		}
 
-		if (pBombArr[i].x- 1 >= 0) // 왼쪽
-		{
-			if (Maze[pBombArr[i].y][pBombArr[i].x - 1] == '0')
-				Maze[pBombArr[i].y][pBombArr[i].x - 1] = '1';
-
-			/* 플레이어가 폭탄에 맞았을 때 시작점으로 보낸다. */
-			if (pPlayer->tPos.x == pBombArr[i].x - 1 && pPlayer->tPos.y == pBombArr[i].y)
+			if (pBombArr[i].x - j >= 0) // 왼쪽
 			{
-				pPlayer->tPos.x = 0;
-				pPlayer->tPos.y = 0;
+				if (Maze[pBombArr[i].y][pBombArr[i].x - j] == '0')
+				{
+					/* 아이템 드랍 확률을 구한다. */
+					if (rand() % 100 < 20)
+					{
+						int iPercent = rand() % 100;
+
+						if (rand() % 100 < 40)
+							Maze[pBombArr[i].y][pBombArr[i].x - j] = '5';
+
+						else if (iPercent < 70)
+							Maze[pBombArr[i].y - j][pBombArr[i].x - j] = '6';
+
+						else
+							Maze[pBombArr[i].y - j][pBombArr[i].x - j] = '7';
+					}
+					else
+						Maze[pBombArr[i].y][pBombArr[i].x - j] = '1';
+				}
+				/* 플레이어가 폭탄에 맞았을 때 시작점으로 보낸다. */
+				if (pPlayer->tPos.x == pBombArr[i].x - j && pPlayer->tPos.y == pBombArr[i].y)
+				{
+					pPlayer->tPos.x = 0;
+					pPlayer->tPos.y = 0;
+				}
 			}
-		}
 
-		if (pBombArr[i].x + 1 < 20) // 오른쪽
-		{
-			if (Maze[pBombArr[i].y][pBombArr[i].x + 1] == '0')
-				Maze[pBombArr[i].y][pBombArr[i].x + 1] = '1';
-
-			/* 플레이어가 폭탄에 맞았을 때 시작점으로 보낸다. */
-			if (pPlayer->tPos.x == pBombArr[i].x + 1 && pPlayer->tPos.y == pBombArr[i].y)
+			if (pBombArr[i].x + j < 20) // 오른쪽
 			{
-				pPlayer->tPos.x = 0;
-				pPlayer->tPos.y = 0;
+				if (Maze[pBombArr[i].y][pBombArr[i].x + j] == '0')
+				{
+					/* 아이템 드랍 확률을 구한다. */
+					if (rand() % 100 < 20)
+					{
+						int iPercent = rand() % 100;
+
+						if (rand() % 100 < 40)
+							Maze[pBombArr[i].y][pBombArr[i].x + j] = '5';
+
+						else if (iPercent < 70)
+							Maze[pBombArr[i].y][pBombArr[i].x + j] = '6';
+
+						else
+							Maze[pBombArr[i].y][pBombArr[i].x + j] = '7';
+					}
+					else
+						Maze[pBombArr[i].y][pBombArr[i].x + j] = '1';
+				}
+				/* 플레이어가 폭탄에 맞았을 때 시작점으로 보낸다. */
+				if (pPlayer->tPos.x == pBombArr[i].x + j && pPlayer->tPos.y == pBombArr[i].y)
+				{
+					pPlayer->tPos.x = 0;
+					pPlayer->tPos.y = 0;
+				}
 			}
 		}
 	}
@@ -298,6 +554,8 @@ int main()
 {
 	/* 20 X 20 미로 생성 */
 	char strMaze[21][21] = { 0 };
+
+	srand((unsigned)time(NULL));
 
 	PLAYER tPlayer = {};
 	POINT tStartPos;
@@ -321,12 +579,12 @@ int main()
 
 		if (tPlayer.tPos.x == tEndPos.x && tPlayer.tPos.y == tEndPos.y)
 		{
-			cout << "도착했습니다." << endl;
+			cout << "출구에 도착했습니다." << endl;
 			break;
 		}
 
-		cout << "t : 폭탄설치 | u : 폭탄 터뜨리기 | i : 벽 밀기" << endl;
-		cout << "w : 위 | s : 아래 | a : 왼쪽 | d : 오른쪽 | q : 종료";
+		cout << "[폭탄설치 : t] [폭탄 터뜨리기 : u] [벽밀기 ON/OFF : i]" << endl;
+		cout << "[위 : w] [아래 : s] [왼쪽 : a] [오른쪽 : d] [종료 : q]" << endl;
 
 		char cinput = _getch();
 
@@ -338,6 +596,12 @@ int main()
 
 		else if (cinput == 'u' || cinput == 'U')
 			Fire(strMaze, &tPlayer, tBombPos, &iBombCount);
+
+		else if (cinput == 'i' || cinput == 'I')
+		{
+			if (tPlayer.bWallPush)
+				tPlayer.bPushOnOff = !tPlayer.bPushOnOff;
+		}
 
 		else
 			MovePlayer(strMaze, &tPlayer, cinput);
